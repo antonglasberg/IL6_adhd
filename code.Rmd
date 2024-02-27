@@ -62,7 +62,6 @@ originalstudier <- read.csv(here("data", "studier.csv"))
 
 originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
 originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
-
 originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
 originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
 
@@ -88,9 +87,9 @@ Kombinationsmetod: Higgins metod 1 och extraherade loggade värden från Leffa s
 ```{r}
 
 logexpand <- read.csv(here("data", "logexpand.csv"))
-logexpand$se <- (logexpand$upper - logexpand$lower) / (3.92) # CI --> SE
+logexpand$se <- (logexpand$upper - logexpand$lower) / (qnorm(0.975)*2) # CI --> SE
 logexpand$V <- logexpand$se^2
-resultlogexpand <- rma.mv(V = logexpand$V, yi = logexpand$hedgesg, random = ~ 1 | StudyNumber/Group, data = logexpand)
+resultlogexpand <- rma.mv(V = V, yi = logexpand$hedgesg, random = ~ 1 | StudyNumber/Group, data = logexpand)
 forest(resultlogexpand, slab = logexpand$AStudies, main = "Extended meta-analysis: Log transformation using Higgins except Leffa")
 
 ```
@@ -100,15 +99,18 @@ Poolad subgrupps analys av de studier där ADHD personerna var omedicinerade, ko
 
 ```{r}
 originalstudier <- read.csv(here("data", "unmedicated.csv"))
-datoriginal <- escalc(measure = "SMD", 
-                      m1i = originalstudier$meanIL6_adhd, 
-                      sd1i = originalstudier$sdIL6_adhd, 
-                      n1i = originalstudier$n_adhd, 
-                      m2i = originalstudier$meanIL6_control, 
-                      sd2i = originalstudier$sdIL6_control, 
-                      n2i = originalstudier$n_control)
+originalstudier <- escalc(
+                      measure = "SMD", 
+                      m1i = meanIL6_adhd, 
+                      sd1i = sdIL6_adhd, 
+                      n1i = n_adhd, 
+                      m2i = meanIL6_control, 
+                      sd2i = sdIL6_control, 
+                      n2i = n_control,
+                      data = originalstudier
+                      )
 
-result <- rma(datoriginal$yi, datoriginal$vi, data = originalstudier)
+result <- rma(yi, vi, data = originalstudier)
 forest(result, slab = originalstudier$Studies, main = "Expanded meta-analysis")
 result
 
@@ -118,27 +120,42 @@ Nu kommer lite meta-regressioner, är lite osäker på den här koden
 Age meta-regression
 
 ```{r}
-library(metafor) # exponentiell fördelning/log original studies
 originalstudier <- read.csv(here("data", "studier.csv"))
-originalstudier$logtransformmean_adhd <- log(originalstudier$meanIL6_adhd) - 0.5 * log((originalstudier$sdIL6_adhd^2/originalstudier$meanIL6_adhd^2) + 1)
-originalstudier$logtransformSD_adhd <- sqrt(log(originalstudier$sdIL6_adhd^2/originalstudier$meanIL6_adhd^2 + 1))
-originalstudier$logtransformmean_control <- log(originalstudier$meanIL6_control) - 0.5 * log((originalstudier$sdIL6_control^2/originalstudier$meanIL6_control^2) + 1)
-originalstudier$logtransformSD_control <- sqrt(log(originalstudier$sdIL6_control^2/originalstudier$meanIL6_control^2 + 1))
+
+originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+
+
 smdil6 <- escalc(measure = "SMD",
-             	m1i = originalstudier$logtransformmean_adhd,
-             	sd1i = originalstudier$logtransformSD_adhd,
-             	n1i = originalstudier$n_adhd,
-             	m2i = originalstudier$logtransformmean_control,
-             	sd2i = originalstudier$logtransformSD_control,
-             	n2i = originalstudier$n_control)
-SmdAge <- escalc(measure="SMD", m1i=Age_ADHD_mean, m2i=AgeHealthymean,
-             	sd1i=Age_ADHD_SD, sd2i=Age_Healthy_SD,
-             	n1i=n_adhd, n2i=n_control,
-             	data=originalstudier)
+             	m1i = logtransformmean_adhd,
+             	sd1i = logtransformSD_adhd,
+             	n1i = n_adhd,
+             	m2i = logtransformmean_control,
+             	sd2i = logtransformSD_control,
+             	n2i = n_control,
+             	data = originalstudier
+             	)
+
+SmdAge <- escalc(
+              measure="SMD", 
+              m1i=Age_ADHD_mean, 
+              m2i=AgeHealthymean,
+             	sd1i=Age_ADHD_SD, 
+              sd2i=Age_Healthy_SD,
+             	n1i=n_adhd, 
+              n2i=n_control,
+             	data=originalstudier
+              )
  
-regression <- rma(yi=smdil6$yi, vi=smdil6$vi,
-              	mods = ~ SmdAge$yi, SmdAge$vi,
-              	data=smdil6, method="REML")
+regression <- rma(
+                yi, 
+                vi,
+              	mods = ~ SmdAge$yi, 
+                SmdAge$vi, # Formula might be wrong, please double check. This argument does nothing.
+              	data=smdil6,
+              	method="REML")
 summary(regression)
 regplot(regression)
 ```
@@ -147,21 +164,30 @@ sex meta-regression
 
 ```{r}
 originalstudier <- read.csv(here("data", "studier.csv"))
-originalstudier$logtransformmean_adhd <- log(originalstudier$meanIL6_adhd) - 0.5 * log((originalstudier$sdIL6_adhd^2/originalstudier$meanIL6_adhd^2) + 1)
-originalstudier$logtransformSD_adhd <- sqrt(log(originalstudier$sdIL6_adhd^2/originalstudier$meanIL6_adhd^2 + 1))
-originalstudier$logtransformmean_control <- log(originalstudier$meanIL6_control) - 0.5 * log((originalstudier$sdIL6_control^2/originalstudier$meanIL6_control^2) + 1)
-originalstudier$logtransformSD_control <- sqrt(log(originalstudier$sdIL6_control^2/originalstudier$meanIL6_control^2 + 1))
-smdil6 <- escalc(measure = "SMD",
-             	m1i = originalstudier$logtransformmean_adhd,
-             	sd1i = originalstudier$logtransformSD_adhd,
-             	n1i = originalstudier$n_adhd,
-             	m2i = originalstudier$logtransformmean_control,
-             	sd2i = originalstudier$logtransformSD_control,
-             	n2i = originalstudier$n_control)
+
+originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+
+originalstudier <- escalc(
+              measure = "SMD",
+             	m1i = logtransformmean_adhd,
+             	sd1i = logtransformSD_adhd,
+             	n1i = n_adhd,
+             	m2i = logtransformmean_control,
+             	sd2i = logtransformSD_control,
+             	n2i = n_control,
+             	data = originalstudier,
+             	append = TRUE
+              )
+
 procentmen <- originalstudier$ADHDprocentmales - originalstudier$Healthyprocentmales
-regression <- rma(yi=smdil6$yi, vi=smdil6$vi,
+regression <- rma(
+                yi, 
+                vi,
               	mods = ~ procentmen,
-              	data=smdil6, method="REML")
+              	data=originalstudier, method="REML")
  
 summary(regression)
 regplot(regression)
@@ -173,23 +199,29 @@ Nos-score metaregression
 
 ```{r}
 
-score <- read.csv(here("data", "studier.csv"))
-score$logtransformmean_adhd <- log(score$meanIL6_adhd) - 0.5 * log((score$sdIL6_adhd^2/score$meanIL6_adhd^2) + 1)
-score$logtransformSD_adhd <- sqrt(log(score$sdIL6_adhd^2/score$meanIL6_adhd^2 + 1))
-score$logtransformmean_control <- log(score$meanIL6_control) - 0.5 * log((score$sdIL6_control^2/score$meanIL6_control^2) + 1)
-score$logtransformSD_control <- sqrt(log(score$sdIL6_control^2/score$meanIL6_control^2 + 1))
+originalstudier <- read.csv(here("data", "studier.csv"))
+originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
  
-smdil6 <- escalc(measure = "SMD",
-             	m1i = score$logtransformmean_adhd,
-             	sd1i = score$logtransformSD_adhd,
-             	n1i = score$n_adhd,
-             	m2i = score$logtransformmean_control,
-             	sd2i = score$logtransformSD_control,
-             	n2i = score$n_control)
+originalstudier <- escalc(
+              measure = "SMD",
+             	m1i = logtransformmean_adhd,
+             	sd1i = logtransformSD_adhd,
+             	n1i = n_adhd,
+             	m2i = logtransformmean_control,
+             	sd2i = logtransformSD_control,
+             	n2i = n_control,
+             	data = originalstudier,
+             	append = TRUE
+              )
  
-regression <- rma(yi=smdil6$yi, vi=smdil6$vi,
-              	mods = ~ score$NOS,
-              	data=smdil6, method="REML")
+regression <- rma(
+                yi, 
+                vi,
+              	mods = ~ originalstudier$NOS,
+              	data=originalstudier, method="REML")
  
 summary(regression)
 regplot(regression)
