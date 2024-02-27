@@ -107,7 +107,8 @@ originalstudier <- escalc(
                       m2i = meanIL6_control, 
                       sd2i = sdIL6_control, 
                       n2i = n_control,
-                      data = originalstudier
+                      data = originalstudier,
+                      append = T
                       )
 
 result <- rma(yi, vi, data = originalstudier)
@@ -163,24 +164,6 @@ regplot(regression)
 sex meta-regression
 
 ```{r}
-originalstudier <- read.csv(here("data", "studier.csv"))
-
-originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
-originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
-originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
-originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
-
-originalstudier <- escalc(
-              measure = "SMD",
-             	m1i = logtransformmean_adhd,
-             	sd1i = logtransformSD_adhd,
-             	n1i = n_adhd,
-             	m2i = logtransformmean_control,
-             	sd2i = logtransformSD_control,
-             	n2i = n_control,
-             	data = originalstudier,
-             	append = TRUE
-              )
 
 procentmen <- originalstudier$ADHDprocentmales - originalstudier$Healthyprocentmales
 regression <- rma(
@@ -198,24 +181,6 @@ regplot(regression)
 Nos-score metaregression
 
 ```{r}
-
-originalstudier <- read.csv(here("data", "studier.csv"))
-originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
-originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
-originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
-originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
- 
-originalstudier <- escalc(
-              measure = "SMD",
-             	m1i = logtransformmean_adhd,
-             	sd1i = logtransformSD_adhd,
-             	n1i = n_adhd,
-             	m2i = logtransformmean_control,
-             	sd2i = logtransformSD_control,
-             	n2i = n_control,
-             	data = originalstudier,
-             	append = TRUE
-              )
  
 regression <- rma(
                 yi, 
