@@ -1,8 +1,9 @@
 ---
 title: "IL6_adhd"
-author: "Love Ahnström"
+author: "Anton Glasberg (edited by Love Ahnström)"
 date: "2024-02-27"
-output: html_document
+output_file: README.md
+output: md_document
 ---
 
 Setup knitr, install required packages. 
