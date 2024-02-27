@@ -48,23 +48,37 @@ result
 Higgins method 1  för att transformera värden till log-värden då IL-6 inte är normalfördelade
 Meta-analysis of skewed data: Combining results reported on log-transformed or raw scales (nih.gov)
 
-```{r higgins}
+```{r}
+
+higgins_1_mean <- function(mean, sd) {
+  return(log(mean) - 0.5 * log((sd^2/mean^2) + 1))
+}
+
+higgins_1_sd <- function(mean, sd) {
+  return(sqrt(log(sd^2/mean^2 + 1)))
+}
 
 originalstudier <- read.csv(here("data", "studier.csv"))
-originalstudier$logtransformmean_adhd <- log(originalstudier$meanIL6_adhd) - 0.5 * log((originalstudier$sdIL6_adhd^2/originalstudier$meanIL6_adhd^2) + 1)
-originalstudier$logtransformSD_adhd <- sqrt(log(originalstudier$sdIL6_adhd^2/originalstudier$meanIL6_adhd^2 + 1))
-originalstudier$logtransformmean_control <- log(originalstudier$meanIL6_control) - 0.5 * log((originalstudier$sdIL6_control^2/originalstudier$meanIL6_control^2) + 1)
-originalstudier$logtransformSD_control <- sqrt(log(originalstudier$sdIL6_control^2/originalstudier$meanIL6_control^2 + 1))
+
+originalstudier$logtransformmean_adhd <- higgins_1_mean(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+originalstudier$logtransformSD_adhd <- higgins_1_sd(originalstudier$meanIL6_adhd, originalstudier$sdIL6_adhd)
+
+originalstudier$logtransformmean_control <- higgins_1_mean(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+originalstudier$logtransformSD_control <- higgins_1_sd(originalstudier$meanIL6_control, originalstudier$sdIL6_control)
+
+originalstudier <- escalc(
+              measure = "SMD",
+             	m1i = logtransformmean_adhd,
+             	sd1i = logtransformSD_adhd,
+             	n1i = n_adhd,
+             	m2i = logtransformmean_control,
+             	sd2i = logtransformSD_control,
+             	n2i = n_control,
+             	data = originalstudier,
+             	append = TRUE
+              )
  
-logdat <- escalc(measure = "SMD",
-             	m1i = originalstudier$logtransformmean_adhd,
-             	sd1i = originalstudier$logtransformSD_adhd,
-             	n1i = originalstudier$n_adhd,
-             	m2i = originalstudier$logtransformmean_control,
-             	sd2i = originalstudier$logtransformSD_control,
-             	n2i = originalstudier$n_control)
- 
-logresult <- rma.mv(logdat$yi, logdat$vi, random = ~ 1 | StudyNumber/Group, data = originalstudier)
+logresult <- rma.mv(yi, vi, random = ~ 1 | StudyNumber/Group, data = originalstudier)
 forest(logresult, slab = originalstudier$Studies, main = "log transformed original studies")
 
 ```
