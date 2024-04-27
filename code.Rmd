@@ -25,7 +25,7 @@ if(!require(here)){
 
 ```
 
-rma.mv för meta-analyses, raw values, (rma.mv då leffa är samma patienter + control vid två olika tidpunkter)
+rma.mv for meta-analyses, raw values, (rma.mv --> Leffa is the same patients + control at two different time points)
 
 ```{r read_studies}
 df <- read.csv(here("data", "studier.csv"))
@@ -48,7 +48,7 @@ result
 
 ```
 
-Higgins method 1  för att transformera värden till log-värden då IL-6 inte är normalfördelade
+Higgins method 1 for transforming values into log-values as IL-6 is not normally distributed."
 
 ```{r}
 
@@ -91,7 +91,7 @@ forest(logresult, slab = df$Studies, main = "log transformed original studies")
 
 ```
 
-Kombinationsmetod: Higgins metod 1 och extraherade loggade värden från Leffa som redovisade loggade värden. Datan i filen 'logexpand' kommer från forest plotten i den tidigare koden som använder metod 1 från Higgins. Däremot är datan i Leffa manuellt inskriven i 'logexpand', så alla rader förutom Leffa18 och Leffa22 ska ha samma estimat i forest-plotten.
+Combination method: Higgins method 1 and extracted logged values from Leffa reporting logged values. The data in the file 'logexpand' comes from the forest plot in the previous code using method 1 from Higgins. However, the data in Leffa is manually entered into 'logexpand', so all rows except Leffa18 and Leffa22 should have the same estimate in the forest plot.
 
 ```{r}
 
@@ -104,7 +104,7 @@ forest(resultlogexpand, slab = logexpand$AStudies, main = "Extended meta-analysi
 ```
 
 
-Poolad subgrupps analys av de studier där ADHD personerna var omedicinerade, kodmässigt en  “vanlig meta-analys”
+Pooling subgroup analysis of studies where individuals with ADHD were unmedicated, coded as a 'standard meta-analysis'
 
 ```{r}
 df <- read.csv(here("data", "unmedicated.csv"))
@@ -126,8 +126,7 @@ result
 
 ```
 
-Nu kommer lite meta-regressioner, är lite osäker på den här koden
-Age meta-regression
+meta-regressions
 
 ```{r}
 df <- read.csv(here("data", "studier.csv"))
