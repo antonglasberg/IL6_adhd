@@ -26,7 +26,7 @@ if(!require(here)){
 ```
 
 rma.mv for meta-analyses, raw values, (rma.mv --> Leffa is the same patients + control at two different time points)
-
+test
 ```{r read_studies}
 df <- read.csv(here("data", "studier.csv"))
 df <- escalc(
